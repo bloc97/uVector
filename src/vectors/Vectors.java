@@ -260,12 +260,14 @@ public abstract class Vectors {
     }
     /**
      * Computes the arithmetic mean
-     * @param vector
      * @param vectors
      * @return Mean of vectors, also called Center of mass or Centroid
      */
-    public static Vector meanArithmetic(Vector vector, Vector... vectors) {
-        Vector sumVector = vector.copy();
+    public static Vector meanArithmetic(Vector... vectors) {
+        if (vectors.length < 1) {
+            return null;
+        }
+        Vector sumVector = vectors[0].copy();
         int count = 1 + vectors.length;
         
         for (Vector v : vectors) {
@@ -282,8 +284,11 @@ public abstract class Vectors {
      * @param vectors
      * @return Mean of vectors
      */
-    public static Vector meanGeometric(Vector vector, Vector... vectors) {
-        Vector sumVector = vector.copy();
+    public static Vector meanGeometric(Vector... vectors) {
+        if (vectors.length < 1) {
+            return null;
+        }
+        Vector sumVector = vectors[0].copy();
         int count = 1 + vectors.length;
         
         for (Vector v : vectors) {
@@ -300,15 +305,18 @@ public abstract class Vectors {
      * @param vectors
      * @return Mean of vectors
      */
-    public static Vector meanHarmonic(Vector vector, Vector... vectors) {
-        Vector sumVector = vector.copy().inv();
+    public static Vector meanHarmonic(Vector... vectors) {
+        if (vectors.length < 1) {
+            return null;
+        }
+        Vector sumVector = vectors[0].copy().inv();
         int count = 1 + vectors.length;
         
         for (Vector v : vectors) {
             sumVector.add(v.copy().inv());
         }
         
-        return vector.shell().fill(count).div(sumVector);
+        return vectors[0].shell().fill(count).div(sumVector);
     }
     
     public static Vector findMin(BiFunction<Vector, Vector, Double> distanceMetric, Vector target, Vector... choices) {
