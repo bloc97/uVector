@@ -24,7 +24,6 @@
 package vectors;
 
 import java.util.Arrays;
-import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -41,15 +40,17 @@ public interface Vector<T extends Vector<T>> {
      *
      * @return Copy of the Vector
      */
-    T copy();
+    default T copy() {
+        T copy = shell();
+        System.arraycopy(content(), 0, copy.content(), 0, size());
+        return copy;
+    }
     
     /**
      *
-     * @return Vector of same size with all elements set to 0
+     * @return New vector object of same size with all elements set to 0
      */
-    default T shell() {
-        return copy().zero();
-    }
+    T shell();
     
     /**
      *

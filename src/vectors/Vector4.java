@@ -9,12 +9,12 @@ package vectors;
  *
  * @author bowen
  */
-public class VectorN implements Vector<VectorN> {
+public class Vector4 implements Vector<Vector4> {
 
     private final double[] content;
     
-    public VectorN(int n) {
-        content = new double[n];
+    public Vector4() {
+        content = new double[4];
     }
 
     @Override
@@ -23,14 +23,14 @@ public class VectorN implements Vector<VectorN> {
     }
 
     @Override
-    public VectorN set(int i, double d) {
+    public Vector4 set(int i, double d) {
         content[i] = d;
         return this;
     }
 
     @Override
-    public VectorN shell() {
-        return new VectorN(size());
+    public Vector4 shell() {
+        return new Vector4();
     }
     
 }
