@@ -11,8 +11,8 @@ import java.util.function.BiFunction;
  *
  * @author bowen
  */
-public interface DistanceMetric {
-    public static BiFunction<Vector, Vector, Double> 
+public interface DistanceMetric extends BiFunction<Vector, Vector, Double> {
+    public static DistanceMetric 
             TAXICAB = getLpSpaceMetric(1),
             EUCLIDIAN = getLpSpaceMetric(2),
             MAX = getLpSpaceMetric(Double.POSITIVE_INFINITY),
@@ -20,9 +20,13 @@ public interface DistanceMetric {
         return Math.random();
     };
     
-    public static BiFunction<Vector, Vector, Double> getLpSpaceMetric(double p) {
+    public static DistanceMetric getLpSpaceMetric(double p) {
         return (t, u) -> {
             return Vectors.normLp(t.copy().sub(u), p);
         };
     }
+
+    @Override
+    public Double apply(Vector target, Vector u);
+    
 }

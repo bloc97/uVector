@@ -33,6 +33,40 @@ import java.util.function.BinaryOperator;
 public abstract class Vectors {
     
     /**
+     * Finds the minimum elements between the two vectors
+     * @param <T> Type of vector
+     * @param vector First vector
+     * @param vector2 Second vector
+     * @return A new vector with its elements equal to min(vector, vector2)
+     */
+    public static <T extends Vector<T>> T min(T vector, T vector2) {
+        if (vector.size() == vector2.size()) {
+            T newVector = vector.shell();
+            for (int i=0; i<vector.size(); i++) {
+                newVector.set(i, Math.min(vector.get(i), vector2.get(i)));
+            }
+            return newVector;
+        }
+        throw new IllegalArgumentException("Different vector sizes.");
+    }
+    /**
+     * Finds the maximum elements between the two vectors
+     * @param <T> Type of vector
+     * @param vector First vector
+     * @param vector2 Second vector
+     * @return A new vector with its elements equal to max(vector, vector2)
+     */
+    public static <T extends Vector<T>> T max(T vector, T vector2) {
+        if (vector.size() == vector2.size()) {
+            T newVector = vector.shell();
+            for (int i=0; i<vector.size(); i++) {
+                newVector.set(i, Math.min(vector.get(i), vector2.get(i)));
+            }
+            return newVector;
+        }
+        throw new IllegalArgumentException("Different vector sizes.");
+    }
+    /**
      * Performs element-wise addition of two vectors of same size
      * @param <T> Type of vector
      * @param vector First vector
@@ -258,72 +292,93 @@ public abstract class Vectors {
     public static Vector3 cross_AxBxA(Vector3 a, Vector3 b) {
         return cross(cross(a, b), a);
     }
+    
+    
     /**
      * Computes the arithmetic mean
+     * @param <T>
      * @param vectors
      * @return Mean of vectors, also called Center of mass or Centroid
      */
-    public static Vector meanArithmetic(Vector... vectors) {
-        if (vectors.length < 1) {
-            return null;
-        }
-        Vector sumVector = vectors[0].copy();
-        int count = 1 + vectors.length;
-        
-        for (Vector v : vectors) {
-            sumVector.add(v);
-        }
-        
-        sumVector.div(count);
-        
-        return sumVector;
-    }
-    /**
-     * Computes the geometric mean
-     * @param vector
-     * @param vectors
-     * @return Mean of vectors
-     */
-    public static Vector meanGeometric(Vector... vectors) {
-        if (vectors.length < 1) {
-            return null;
-        }
-        Vector sumVector = vectors[0].copy();
-        int count = 1 + vectors.length;
-        
-        for (Vector v : vectors) {
-            sumVector.mulElem(v);
-        }
-        
-        sumVector.pow(count);
-        
-        return sumVector;
-    }
-    /**
-     * Computes the harmonic mean
-     * @param vector
-     * @param vectors
-     * @return Mean of vectors
-     */
-    public static Vector meanHarmonic(Vector... vectors) {
-        if (vectors.length < 1) {
-            return null;
-        }
-        Vector sumVector = vectors[0].copy().inv();
-        int count = 1 + vectors.length;
-        
-        for (Vector v : vectors) {
-            sumVector.add(v.copy().inv());
-        }
-        
-        return vectors[0].shell().fill(count).div(sumVector);
+    public static <T extends Vector<T>> T mean(T... vectors) {
+        return meanGen(1, vectors);
     }
     
-    public static Vector findMin(BiFunction<Vector, Vector, Double> distanceMetric, Vector target, Vector... choices) {
+    /**
+     * Computes the generalized mean
+     * @param <T>
+     * @param p
+     * @param vectors
+     * @return Generalized mean of vectors
+     */
+    public static <T extends Vector<T>> T meanGen(double p, T... vectors) {
+        if (vectors.length < 1) {
+            return null;
+        }
+        T sumVector = vectors[0].shell();
+        int n = vectors.length;
+        if (p == 1) { //Arithmetic mean
+            for (T v : vectors) {
+                sumVector.add(v);
+            }
+            sumVector.div(n);
+            return sumVector;
+        } else if (p == 0) { //Geometric mean
+            for (T v : vectors) {
+                sumVector.mulElem(v);
+            }
+            sumVector.pow(1d/n);
+            return sumVector;
+        } else if (p == -1) { //Harmonic mean
+            for (T v : vectors) {
+                sumVector.add(v.copy().inv());
+            }
+            return vectors[0].shell().fill(n).div(sumVector);
+        } else if (p == Double.POSITIVE_INFINITY) {//TODO: UNOPTIMIZED, Useless comparisons with first vector, repeat comparisons and useless vector instantiation
+            sumVector = vectors[0].copy();
+            for (T v : vectors) {
+                sumVector = max(sumVector, v);
+            }
+            return sumVector;
+        } else if (p == Double.NEGATIVE_INFINITY) {
+            sumVector = vectors[0].copy();
+            for (T v : vectors) {
+                sumVector = min(sumVector, v);
+            }
+            return sumVector;
+        } else {
+            for (T v : vectors) {
+                sumVector.add(v.copy().pow(p));
+            }
+            sumVector.div(n).pow(1d/p);
+            return sumVector;
+        }
+    }
+    
+    /**
+     * Finds the vector that has the shortest distance to the target
+     * @param <T>
+     * @param target
+     * @param choices
+     * @return Closest vector in Euclidian space
+     */
+    public static <T extends Vector<T>> T findMin(T target, T... choices) {
+        return findMinGen(DistanceMetric.EUCLIDIAN, target, choices);
+    }
+    
+    /**
+     * Finds the vector that has the shortest distance to the target in general spaces
+     * @param <T>
+     * @param distanceMetric
+     * @param target
+     * @param choices
+     * @return Closest vector based on distanceMetric
+     */
+    public static <T extends Vector<T>> T findMinGen(DistanceMetric distanceMetric, T target, T... choices) {
         double minScore = Double.POSITIVE_INFINITY;
-        Vector bestVector = null;
+        T bestVector = null;
         
-        for (Vector v : choices) {
+        for (T v : choices) {
             double score = distanceMetric.apply(target, v);
             if (score < minScore) {
                 minScore = score;
@@ -336,23 +391,35 @@ public abstract class Vectors {
     
     /**
      * Computes the euclidian geometric median, this function is slow and can be approximated using findMin and arithmetic mean
+     * @param <T>
      * @param vectors
      * @return Geometric median of vectors
      */
-    public static Vector median(Vector... vectors) {
-        return median(DistanceMetric.EUCLIDIAN, vectors);
+    public static <T extends Vector<T>> T median(T... vectors) {
+        return medianGen(DistanceMetric.EUCLIDIAN, vectors);
     }
     /**
-     * Computes the generalized median, this function is slow and can be approximated using findMin and mean
+     * Computes the median in Lp space, this function is slow and can be approximated using findMinGen and mean
+     * @param <T>
+     * @param p
+     * @param vectors
+     * @return Geometric median of vectors in Lp space
+     */
+    public static <T extends Vector<T>> T medianLp(double p, T... vectors) {
+        return medianGen(DistanceMetric.getLpSpaceMetric(p));
+    }
+    /**
+     * Computes the generalized median, this function is slow and can be approximated using findMinGen and mean
+     * @param <T>
      * @param distanceMetric
      * @param vectors
-     * @return Geometric median of vectors
+     * @return Generalized median of vectors
      */
-    public static Vector median(BiFunction<Vector, Vector, Double> distanceMetric, Vector... vectors) {
+    public static <T extends Vector<T>> T medianGen(DistanceMetric distanceMetric, T... vectors) {
         double minScore = Double.POSITIVE_INFINITY;
-        Vector bestVector = null;
+        T bestVector = null;
         
-        for (Vector t : vectors) {
+        for (T t : vectors) {
             double scoreSum = 0;
             for (Vector v : vectors) {
                 scoreSum += distanceMetric.apply(t, v);
@@ -366,6 +433,19 @@ public abstract class Vectors {
         return bestVector;
     }
     
+    /**
+     * Computes L2 norm of a vector
+     * @param vector
+     * @return Norm of vector
+     */
+    public static double norm(Vector<?> vector) {
+        return normLp(vector, 2);
+    }
+    /**
+     * Computes Lp norm of a vector
+     * @param vector
+     * @return Lp Norm of vector
+     */
     public static double normLp(Vector<?> vector, double p) {
         if (p == 0) { //"zero" norm
             int count = 0;
@@ -406,6 +486,14 @@ public abstract class Vectors {
         }
     }
     
+    /**
+     * Computes sum of squares of a vector
+     * @param vector
+     * @return Norm of vector
+     */
+    public static double distanceSum(Vector<?> vector) {
+        return distanceSumLp(vector, 2);
+    }
     public static double distanceSumLp(Vector<?> vector, double p) {
         if (p == 0) { //"zero" distance
             int count = 0;
